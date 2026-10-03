@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Veilon">
+  <defs>
+    <linearGradient id="vbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22232a"/><stop offset="1" stop-color="#121318"/></linearGradient>
+    <radialGradient id="veil" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#c9d6ff" stop-opacity=".55"/><stop offset=".55" stop-color="#7c9cff" stop-opacity=".38"/><stop offset="1" stop-color="#5a73e6" stop-opacity=".6"/></radialGradient>
+    <clipPath id="clip"><rect width="512" height="512" rx="120"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#vbg)"/>
+  <g clip-path="url(#clip)">
+    <rect x="72" y="150" width="368" height="64" rx="32" fill="#2c2e37"/>
+    <circle cx="116" cy="182" r="12" fill="#e9ebf3"/>
+    <rect x="170" y="172" width="44" height="20" rx="10" fill="#8b90a3"/>
+    <circle cx="258" cy="182" r="12" fill="#8b90a3"/>
+    <circle cx="302" cy="182" r="12" fill="#8b90a3"/>
+    <circle cx="346" cy="182" r="12" fill="#8b90a3"/>
+    <circle cx="390" cy="182" r="12" fill="#8b90a3"/>
+    <circle cx="340" cy="250" r="150" fill="url(#veil)"/>
+    <circle cx="340" cy="250" r="149" fill="none" stroke="#b9c7ff" stroke-opacity=".55" stroke-width="3"/>
+    <path d="M232 196a112 112 0 0 1 76-84" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" opacity=".55"/>
+    <path d="M140 330h160" stroke="#3a3d49" stroke-width="16" stroke-linecap="round"/>
+    <path d="M140 372h104" stroke="#3a3d49" stroke-width="16" stroke-linecap="round"/>
+  </g>
+</svg>
