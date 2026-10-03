@@ -1,0 +1,57 @@
+# The app's source code is private (AbhiramUpadrashta/Veilon-src). This public repo only builds and
+# publishes the finished app and its website, so people can download it. A read-only deploy key
+# (secret SRC_KEY) lets these workflows check out the private code.
+name: Build & Release Veilon
+on:
+  schedule:
+    - cron: "11 * * * *"     # every hour: build when the private code has a new version
+  workflow_dispatch:
+    inputs:
+      force: { description: "Rebuild even if this version is already published", type: boolean, default: false }
+permissions:
+  contents: write
+concurrency: { group: release, cancel-in-progress: false }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      build: ${{ steps.v.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { repository: AbhiramUpadrashta/Veilon-src, ssh-key: "${{ secrets.SRC_KEY }}" }
+      - id: v
+        env: { GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}", FORCE: "${{ inputs.force }}" }
+        run: |
+          V=$(python3 -c "import plistlib;print(plistlib.load(open('Resources/Info.plist','rb'))['CFBundleShortVersionString'])")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          have=$(gh release view "v$V" --json assets -q '.assets[].name' 2>/dev/null || true)
+          need=0; for a in Veilon.zip Barveil.zip; do echo "$have" | grep -qx "$a" || need=1; done
+          if [ "$FORCE" = "true" ]; then need=1; fi
+          echo "Version $V — build needed: $need"
+          echo "build=$([ $need = 1 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+  release:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { repository: AbhiramUpadrashta/Veilon-src, ssh-key: "${{ secrets.SRC_KEY }}" }
+      - name: Build Veilon.app
+        run: bash build.sh
+      - name: Package Veilon.zip
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent build/Veilon.app build/Veilon.zip
+          cp build/Veilon.zip build/Barveil.zip   # old Barveil versions still look for this name
+      - name: Publish release
+        env: { GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}" }
+        run: |
+          VERSION=${{ needs.check.outputs.version }}; TAG="v$VERSION"; TITLE="Veilon $VERSION"
+          FILES="build/Veilon.zip build/Barveil.zip"
+          NOTES="Veilon $VERSION — free menu bar icon hider for macOS 13–27 by Bubbles Aro.
+
+          **Install:** download Veilon.zip → open Veilon → click “Move to Applications”.
+
+          Website: https://bubbles-hq.netlify.app/veilon/"
+          if gh release view "$TAG" >/dev/null 2>&1; then gh release upload "$TAG" $FILES --clobber
+          else gh release create "$TAG" $FILES --title "$TITLE" --notes "$NOTES" --latest || gh release upload "$TAG" $FILES --clobber; fi
