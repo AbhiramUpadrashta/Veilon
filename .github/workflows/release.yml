@@ -29,7 +29,7 @@ jobs:
           V=$(python3 -c "import plistlib;print(plistlib.load(open('Resources/Info.plist','rb'))['CFBundleShortVersionString'])")
           echo "version=$V" >> "$GITHUB_OUTPUT"
           have=$(gh release view "v$V" --json assets -q '.assets[].name' 2>/dev/null || true)
-          need=0; for a in Veilon.zip Barveil.zip; do echo "$have" | grep -qx "$a" || need=1; done
+          need=0; for a in Veilon.zip Veilon.zip.sig Veilon.zip.sha256 Barveil.zip; do echo "$have" | grep -qx "$a" || need=1; done
           if [ "$FORCE" = "true" ]; then need=1; fi
           echo "Version $V — build needed: $need"
           echo "build=$([ $need = 1 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
@@ -46,15 +46,35 @@ jobs:
         run: |
           ditto -c -k --sequesterRsrc --keepParent build/Veilon.app build/Veilon.zip
           cp build/Veilon.zip build/Barveil.zip   # old Barveil versions still look for this name
+      - name: Sign the update (Ed25519) and write checksums
+        env: { UPDATE_SIGNING_KEY: "${{ secrets.UPDATE_SIGNING_KEY }}" }
+        run: |
+          test -n "$UPDATE_SIGNING_KEY" || { echo "UPDATE_SIGNING_KEY secret is missing"; exit 1; }
+          python3 -m venv /tmp/sig && /tmp/sig/bin/pip install -q cryptography
+          /tmp/sig/bin/python - <<'PY'
+          import base64, os
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+          k = Ed25519PrivateKey.from_private_bytes(base64.b64decode(os.environ["UPDATE_SIGNING_KEY"]))
+          pub = Ed25519PublicKey.from_public_bytes(base64.b64decode("EXR6hSBigdgzTPVSY+Joup1NpMt6DU5y+UqD+28sdhY="))
+          for name in ("Veilon.zip", "Barveil.zip"):
+              data = open(f"build/{name}", "rb").read()
+              sig = k.sign(data)
+              pub.verify(sig, data)          # the key in the app must accept it
+              open(f"build/{name}.sig", "w").write(base64.b64encode(sig).decode() + "\n")
+          print("signed")
+          PY
+          cd build && shasum -a 256 Veilon.zip > Veilon.zip.sha256 && cat Veilon.zip.sha256
       - name: Publish release
         env: { GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}" }
         run: |
           VERSION=${{ needs.check.outputs.version }}; TAG="v$VERSION"; TITLE="Veilon $VERSION"
-          FILES="build/Veilon.zip build/Barveil.zip"
+          FILES="build/Veilon.zip build/Veilon.zip.sig build/Veilon.zip.sha256 build/Barveil.zip build/Barveil.zip.sig"
           NOTES="Veilon $VERSION — free menu bar icon hider for macOS 13–27 by Bubbles Aro.
 
           **Install:** download Veilon.zip → open Veilon → click “Move to Applications”.
 
-          Website: https://bubbles-hq.netlify.app/veilon/"
+          Updates are signed and checked before they install.
+
+          Website: https://abhiramupadrashta.github.io/Veilon/"
           if gh release view "$TAG" >/dev/null 2>&1; then gh release upload "$TAG" $FILES --clobber
           else gh release create "$TAG" $FILES --title "$TITLE" --notes "$NOTES" --latest || gh release upload "$TAG" $FILES --clobber; fi
