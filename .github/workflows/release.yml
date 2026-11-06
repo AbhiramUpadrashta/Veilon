@@ -75,6 +75,6 @@ jobs:
 
           Updates are signed and checked before they install.
 
-          Website: https://abhiramupadrashta.github.io/Veilon/"
+          Website: https://bubbles.foo.ng/Veilon/"
           if gh release view "$TAG" >/dev/null 2>&1; then gh release upload "$TAG" $FILES --clobber
           else gh release create "$TAG" $FILES --title "$TITLE" --notes "$NOTES" --latest || gh release upload "$TAG" $FILES --clobber; fi
